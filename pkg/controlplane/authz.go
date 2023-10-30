@@ -21,7 +21,7 @@ import (
 	"github.com/lestrrat-go/jwx/jwt"
 
 	"github.com/clusterlink-net/clusterlink/pkg/controlplane/api"
-	"github.com/clusterlink-net/clusterlink/pkg/controlplane/eventmanager"
+	"github.com/clusterlink-net/clusterlink/pkg/policyengine/policytypes"
 )
 
 const (
@@ -79,17 +79,17 @@ func (cp *Instance) AuthorizeEgress(req *EgressAuthorizationRequest) (*EgressAut
 		return nil, fmt.Errorf("no bindings found for import '%s'", req.Import)
 	}
 
-	// TODO: get k8s attributes using cp.kubeClient
-	connReq := eventmanager.ConnectionRequestAttr{DstService: req.Import, Direction: eventmanager.Outgoing}
+	workloadLabels := cp.platform.GetLabelsFromIP(req.IP)
+	connReq := policytypes.ConnectionRequest{SrcWorkloadAttrs: workloadLabels, DstServiceName: req.Import, Direction: policytypes.Outgoing}
 	authResp, err := cp.policyDecider.AuthorizeAndRouteConnection(&connReq)
 	if err != nil {
 		return nil, err
 	}
-	if authResp.Action != eventmanager.Allow {
+	if authResp.Action != policytypes.PolicyActionAllow {
 		return &EgressAuthorizationResponse{Allowed: false}, nil
 	}
 
-	target := authResp.TargetMbg
+	target := authResp.DstPeer
 	peer := cp.GetPeer(target)
 	if peer == nil {
 		return nil, fmt.Errorf("peer '%s' does not exist", target)
@@ -134,12 +134,12 @@ func (cp *Instance) AuthorizeIngress(req *IngressAuthorizationRequest) (*Ingress
 
 	resp.ServiceExists = true
 
-	connReq := eventmanager.ConnectionRequestAttr{DstService: req.Service, Direction: eventmanager.Incoming}
+	connReq := policytypes.ConnectionRequest{DstServiceName: req.Service, Direction: policytypes.Incoming}
 	authResp, err := cp.policyDecider.AuthorizeAndRouteConnection(&connReq)
 	if err != nil {
 		return nil, err
 	}
-	if authResp.Action != eventmanager.Allow {
+	if authResp.Action != policytypes.PolicyActionAllow {
 		resp.Allowed = false
 		return resp, nil
 	}
