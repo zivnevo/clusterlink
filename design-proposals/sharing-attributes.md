@@ -64,10 +64,17 @@ TBD
 
 ## Proposal
 
-This is where we get down to the specifics of what the proposal actually is. It should
- have enough detail that reviewers can understand exactly what you're proposing, but
- should not include things like API designs or implementation. This section should expand
- on the desired outcome and include details on how to measure success.
+### Attaching attributes to clients, services and peers
+We note that there is an inherent difference between clients on one side and services and peers on the other side.
+While services and even-more-so peers are ClusterLink-controlled entities, clients become known to ClusterLink
+only when they attempt to connect to a remote service. In fact, this is a ClusterLink design principal [IS IT?] -
+ClusterLink should be transparent to clients.
+
+This means client-workloads should somehow present to ClusterLink their set of attributes on the first time they try to connect.
+
+
+### Sharing attributes
+
 
 ## Design Details
 
